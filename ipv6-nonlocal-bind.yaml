@@ -1,0 +1,14 @@
+---
+- name: "IPv6 nonlocal bind"
+  hosts: all
+  become: yes
+  gather_facts: False
+  tasks:
+  - name: "Set net.ipv6.ip_nonlocal_bind=1"
+    ansible.posix.sysctl:
+      name: net.ipv6.ip_nonlocal_bind
+      value: '1'
+      sysctl_set: true
+      state: present
+      reload: true
+      sysctl_file: /etc/sysctl.d/20-ipv6-nonlocal-bind.conf

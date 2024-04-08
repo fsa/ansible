@@ -1,0 +1,89 @@
+---
+- hosts: install
+  gather_facts: False
+  tasks:
+  - name: Check admin account data
+    fail:
+      msg: "Требуется указать учётную запись (admin_user_name) и её пароль(admin_user_password)"
+    when: admin_user_name is undefined or admin_user_password is undefined
+
+  - name: Update packages
+    apt: update_cache=yes upgrade=yes autoremove=yes
+
+  - name: Install sudo
+    apt:
+      name: sudo
+      state: present
+
+  - name: Add user to remote hosts
+    user: "name={{ admin_user_name }} groups=adm,sudo append=yes shell=/bin/bash password={{ admin_user_password }}"
+
+  - name: "Upload ssh keys"
+    authorized_key:
+      user: "{{ admin_user_name }}"
+      state: present
+      manage_dir: yes
+      key: "{{ lookup('file', 'ssh-keys.pub') }}"
+
+  - name: Install mc
+    apt:
+      name: mc
+      state: present
+
+  - name: Upload sshd security config
+    copy:
+      src: etc/sshd/10-security.conf
+      dest: /etc/ssh/sshd_config.d/
+      owner: root
+      group: root
+      mode: 640
+
+  - name: "Set net.ipv4_ip_forward=1"
+    ansible.posix.sysctl:
+      name: net.ipv4.ip_forward
+      value: '1'
+      sysctl_set: true
+      state: present
+      reload: true
+      sysctl_file: /etc/sysctl.d/20-ipv4-forward.conf
+
+  - name: "Set net.ipv6.conf.all.forwarding=1"
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.all.forwarding
+      value: '1'
+      sysctl_set: true
+      state: present
+      reload: true
+      sysctl_file: /etc/sysctl.d/20-ipv6-forward.conf
+
+  - name: "Set net.ipv6.ip_nonlocal_bind=1"
+    ansible.posix.sysctl:
+      name: net.ipv6.ip_nonlocal_bind
+      value: '1'
+      sysctl_set: true
+      state: present
+      reload: true
+      sysctl_file: /etc/sysctl.d/20-ipv6-nonlocal-bind.conf
+
+  - name: Set hostname
+    hostname:
+      name: "{{ inventory_hostname }}"
+
+  - name: Locale gen
+    locale_gen:
+      name: "{{ locale }}"
+      state: present
+    when: locale is defined
+
+  - name: "Configure locale to '{{ locale }}'"
+    command: "localectl set-locale {{ locale }}"
+    when: locale is defined
+
+  - name: "Configure timezone to '{{ timezone }}"
+    command: "timedatectl set-timezone {{ timezone }}"
+    when: timezone is defined
+
+  - name: Reboot
+    reboot:
+      reboot_timeout: 0
+    ignore_errors: True

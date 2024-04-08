@@ -1,0 +1,41 @@
+---
+- hosts: nginx_php
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Update apt
+      apt: update_cache=yes
+
+    - name: Install packages
+      apt: name={{ item }} state=latest
+      with_items:
+        - nginx
+        - php-fpm
+        - php-cli
+        - php-pgsql
+        - php-curl
+        - php-xml
+        - php-redis
+        - php-mbstring
+
+    - name: Delete default nginx vhost
+      file: path=/etc/nginx/sites-available/default state=absent
+
+    - name: Delete default nginx vhost symlink
+      file: path=/etc/nginx/sites-enabled/default state=absent
+
+    - name: Nginx conf file copy
+      copy:
+        src=etc/nginx/nginx.conf
+        dest=/etc/nginx/
+      notify: restart nginx
+
+    - name: Nginx php-fpm enable
+      copy:
+        src=etc/nginx/php-fpm.conf
+        dest=/etc/nginx/conf.d/
+      notify: restart nginx
+
+  handlers:
+    - name: restart nginx
+      service: name=nginx state=restarted

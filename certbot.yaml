@@ -1,0 +1,22 @@
+---
+- hosts: all
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Deploy cloudflare api token
+      template:
+        src=templates/cf.ini
+        dest=/root/
+      when: cloudflare_api_token is defined
+    
+    - name: Update apt
+      apt: update_cache=yes
+      when: cloudflare_api_token is defined
+
+    - name: Install packages
+      apt: name=python3-certbot-dns-cloudflare state=latest
+      when: cloudflare_api_token is defined
+
+    - name: Install cert
+      command: certbot certonly --dns-cloudflare --dns-cloudflare-credentials /root/cf.ini --dns-cloudflare-propagation-seconds 15 -d {{ certbot_domain }} -d *.{{ certbot_domain }} -m {{ certbot_email_address }} --agree-tos --noninteractive --redirect
+      when: cloudflare_api_token is defined and certbot_domain is defined and certbot_email_address is defined

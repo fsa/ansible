@@ -1,0 +1,15 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: False
+  tasks:
+  - name: Upload sshd security config
+    ansible.builtin.copy:
+      src: etc/sshd/10-security.conf
+      dest: /etc/ssh/sshd_config.d/
+      owner: root
+      group: root
+      mode: 640
+
+
+

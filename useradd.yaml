@@ -1,0 +1,17 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+  - name: Add user to remote hosts
+    user:
+      name={{ admin_user_name }}
+      groups=adm,sudo append=yes
+      shell=/bin/bash
+      password={{ admin_user_password }}
+
+  - name: "Upload ssh keys"
+    authorized_key:
+      user: {{ admin_user_name }}
+      state: present
+      manage_dir: yes
+      key: "{{ lookup('file', 'ssh-keys.pub') }}"

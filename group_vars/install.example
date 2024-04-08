@@ -1,0 +1,4 @@
+admin_user_name: ADMIN_USERNAME
+admin_user_password: ADMIN_PASSWORD
+locale: ru_RU.UTF-8
+timezone: Asia/Yekaterinburg

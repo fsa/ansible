@@ -1,0 +1,16 @@
+---
+- name: "IPv6 forwarding"
+  hosts: ipv6router
+  become: yes
+  gather_facts: False
+  tasks:
+  - name: "Set net.ipv6.conf.all.forwarding=1"
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.all.forwarding
+      value: '1'
+      sysctl_set: true
+      state: present
+      reload: true
+      sysctl_file: /etc/sysctl.d/20-ipv6-forward.conf
+
+# net.ipv6.conf.ens3.accept_ra = 2

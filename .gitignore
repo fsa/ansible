@@ -1,0 +1,5 @@
+/ssh-keys.pub
+/*.ini
+/.env
+/hosts/
+/group_vars/install

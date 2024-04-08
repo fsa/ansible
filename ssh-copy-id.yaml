@@ -1,0 +1,10 @@
+---
+- hosts: all
+  gather_facts: False
+  tasks:
+  - name: "Upload ssh keys"
+    authorized_key:
+      user: fsa
+      state: present
+      manage_dir: yes
+      key: "{{ lookup('file', 'ssh-keys.pub') }}"

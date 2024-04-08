@@ -1,0 +1,10 @@
+---
+- name: "Upgrade Fedora servers"
+  hosts: fedora
+  become: yes
+  gather_facts: False
+  strategy: free
+
+  tasks:
+  - name: "dnf upgrade"
+    dnf: update_cache=yes
