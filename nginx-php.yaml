@@ -36,6 +36,13 @@
         dest=/etc/nginx/conf.d/
       notify: restart nginx
 
+#    - name: Create symlink nginx vhost
+#      file:
+#        src=../sites-available/{{ conf_file }}.conf
+#        dest=/etc/nginx/sites-enabled/{{ conf_file }}.conf
+#        state=link
+#      notify: restart nginx
+
   handlers:
     - name: restart nginx
       service: name=nginx state=restarted
