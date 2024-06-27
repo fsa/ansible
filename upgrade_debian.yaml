@@ -1,6 +1,6 @@
 ---
-- name: "Upgrade Ubuntu servers"
-  hosts: ubuntu
+- name: "Upgrade Debian based servers"
+  hosts: debian
   become: yes
   gather_facts: False
   strategy: free
