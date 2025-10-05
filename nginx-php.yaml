@@ -17,9 +17,13 @@
         - php-xml
         - php-redis
         - php-mbstring
+        - php-gd
+        - php-zip
+        - php-mailparse
+        - php-intl
 
-    - name: Delete default nginx vhost
-      file: path=/etc/nginx/sites-available/default state=absent
+#    - name: Delete default nginx vhost
+#      file: path=/etc/nginx/sites-available/default state=absent
 
     - name: Delete default nginx vhost symlink
       file: path=/etc/nginx/sites-enabled/default state=absent
