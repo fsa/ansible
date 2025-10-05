@@ -1,5 +1,6 @@
 ---
 - hosts: install
+  become: true
   gather_facts: False
   tasks:
   - name: Check admin account data
@@ -30,13 +31,23 @@
       name: mc
       state: present
 
-  - name: Upload sshd security config
+  - name: Install git
+    apt:
+      name: git
+      state: present
+
+  - name: Install zsh
+    apt:
+      name: zsh
+      state: present
+
+  - name: Upload zsh config
     copy:
-      src: etc/sshd/10-security.conf
-      dest: /etc/ssh/sshd_config.d/
-      owner: root
-      group: root
-      mode: 640
+      src: home/.zshrc
+      dest: /home/{{ admin_user_name }}/
+      owner: "{{ admin_user_name }}"
+      group: "{{ admin_user_name }}"
+      mode: 644
 
   - name: "Set net.ipv4_ip_forward=1"
     ansible.posix.sysctl:
