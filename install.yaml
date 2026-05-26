@@ -1,100 +1,99 @@
 ---
 - hosts: install
   become: true
-  gather_facts: False
+  gather_facts: false
   tasks:
-  - name: Check admin account data
-    fail:
-      msg: "Требуется указать учётную запись (admin_user_name) и её пароль(admin_user_password)"
-    when: admin_user_name is undefined or admin_user_password is undefined
+    - name: Check admin account data
+      ansible.builtin.fail:
+        msg: "Требуется указать учётную запись (admin_user_name) и её пароль(admin_user_password)"
+      when: admin_user_name is undefined or admin_user_password is undefined
 
-  - name: Update packages
-    apt: update_cache=yes upgrade=yes autoremove=yes
+    - name: Update packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: true
+        autoremove: true
 
-  - name: Install sudo
-    apt:
-      name: sudo
-      state: present
+    - name: Install baseline packages
+      ansible.builtin.apt:
+        name:
+          - sudo
+          - mc
+          - git
+          - zsh
+        state: present
 
-  - name: Add user to remote hosts
-    user: "name={{ admin_user_name }} groups=adm,sudo append=yes shell=/bin/bash password={{ admin_user_password }}"
+    - name: Add user to remote hosts
+      ansible.builtin.user:
+        name: "{{ admin_user_name }}"
+        groups: adm,sudo
+        append: true
+        shell: /bin/bash
+        password: "{{ admin_user_password }}"
 
-  - name: "Upload ssh keys"
-    authorized_key:
-      user: "{{ admin_user_name }}"
-      state: present
-      manage_dir: yes
-      key: "{{ lookup('file', 'ssh-keys.pub') }}"
+    - name: Upload ssh keys
+      ansible.posix.authorized_key:
+        user: "{{ admin_user_name }}"
+        state: present
+        manage_dir: true
+        key: "{{ lookup('file', 'ssh-keys.pub') }}"
 
-  - name: Install mc
-    apt:
-      name: mc
-      state: present
+    - name: Upload zsh config
+      ansible.builtin.copy:
+        src: home/.zshrc
+        dest: "/home/{{ admin_user_name }}/"
+        owner: "{{ admin_user_name }}"
+        group: "{{ admin_user_name }}"
+        mode: "0644"
 
-  - name: Install git
-    apt:
-      name: git
-      state: present
+    - name: Set net.ipv4_ip_forward=1
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        sysctl_set: true
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/20-ipv4-forward.conf
 
-  - name: Install zsh
-    apt:
-      name: zsh
-      state: present
+    - name: Set net.ipv6.conf.all.forwarding=1
+      ansible.posix.sysctl:
+        name: net.ipv6.conf.all.forwarding
+        value: '1'
+        sysctl_set: true
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/20-ipv6-forward.conf
 
-  - name: Upload zsh config
-    copy:
-      src: home/.zshrc
-      dest: /home/{{ admin_user_name }}/
-      owner: "{{ admin_user_name }}"
-      group: "{{ admin_user_name }}"
-      mode: 644
+    - name: Set net.ipv6.ip_nonlocal_bind=1
+      ansible.posix.sysctl:
+        name: net.ipv6.ip_nonlocal_bind
+        value: '1'
+        sysctl_set: true
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/20-ipv6-nonlocal-bind.conf
 
-  - name: "Set net.ipv4_ip_forward=1"
-    ansible.posix.sysctl:
-      name: net.ipv4.ip_forward
-      value: '1'
-      sysctl_set: true
-      state: present
-      reload: true
-      sysctl_file: /etc/sysctl.d/20-ipv4-forward.conf
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
 
-  - name: "Set net.ipv6.conf.all.forwarding=1"
-    ansible.posix.sysctl:
-      name: net.ipv6.conf.all.forwarding
-      value: '1'
-      sysctl_set: true
-      state: present
-      reload: true
-      sysctl_file: /etc/sysctl.d/20-ipv6-forward.conf
+    - name: Locale gen
+      community.general.locale_gen:
+        name: "{{ locale }}"
+        state: present
+      when: locale is defined
 
-  - name: "Set net.ipv6.ip_nonlocal_bind=1"
-    ansible.posix.sysctl:
-      name: net.ipv6.ip_nonlocal_bind
-      value: '1'
-      sysctl_set: true
-      state: present
-      reload: true
-      sysctl_file: /etc/sysctl.d/20-ipv6-nonlocal-bind.conf
+    - name: Configure locale
+      ansible.builtin.command: "localectl set-locale {{ locale }}"
+      changed_when: true
+      when: locale is defined
 
-  - name: Set hostname
-    hostname:
-      name: "{{ inventory_hostname }}"
+    - name: Configure timezone
+      ansible.builtin.command: "timedatectl set-timezone {{ timezone }}"
+      changed_when: true
+      when: timezone is defined
 
-  - name: Locale gen
-    locale_gen:
-      name: "{{ locale }}"
-      state: present
-    when: locale is defined
-
-  - name: "Configure locale to '{{ locale }}'"
-    command: "localectl set-locale {{ locale }}"
-    when: locale is defined
-
-  - name: "Configure timezone to '{{ timezone }}"
-    command: "timedatectl set-timezone {{ timezone }}"
-    when: timezone is defined
-
-  - name: Reboot
-    reboot:
-      reboot_timeout: 0
-    ignore_errors: True
+    - name: Reboot server and wait for it to come back
+      ansible.builtin.reboot:
+        reboot_timeout: 600
+        msg: "Rebooting initiated by Ansible after initial setup"
