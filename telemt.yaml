@@ -1,0 +1,31 @@
+---
+- name: Deploy telemt binary
+  hosts: telemt
+  become: true
+
+  vars:
+    binary_src: "~/src/telemt/target/release/telemt"
+    binary_tmp: "/opt/telemt/telemt.new"
+    binary_dst: "/opt/telemt/telemt"
+
+  tasks:
+    - name: Upload new binary
+      ansible.builtin.copy:
+        src: "{{ binary_src }}"
+        dest: "{{ binary_tmp }}"
+        owner: root
+        group: root
+        mode: "0755"
+      register: upload
+
+    - name: Replace binary
+      ansible.builtin.command:
+        cmd: mv {{ binary_tmp }} {{ binary_dst }}
+      when: upload.changed
+      notify: Restart telemt
+
+  handlers:
+    - name: Restart telemt
+      ansible.builtin.systemd:
+        name: telemt
+        state: restarted
