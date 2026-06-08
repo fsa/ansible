@@ -2,4 +2,5 @@
 /*.ini
 /.env
 /hosts/
+!/hosts/demo
 /group_vars/install
