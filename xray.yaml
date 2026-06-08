@@ -1,0 +1,27 @@
+---
+- name: Deploy xray binary
+  hosts: xray
+  become: true
+
+  vars:
+    binary_src: "~/src/Xray-core/xray"
+    binary_dst: "/opt/xray"
+
+  tasks:
+    - name: Upload new binary
+      ansible.builtin.copy:
+        src: "{{ binary_src }}"
+        dest: "{{ binary_dst }}"
+        owner: root
+        group: root
+        mode: "0755"
+      notify: Restart xray
+
+    - name: Restart service immediately if binary changed
+      ansible.builtin.meta: flush_handlers
+
+  handlers:
+    - name: Restart xray
+      ansible.builtin.systemd:
+        name: xray
+        state: restarted
